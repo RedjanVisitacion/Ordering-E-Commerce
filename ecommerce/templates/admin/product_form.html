@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Product{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>
+    <i class="bi bi-{% if action == 'Add' %}plus-circle{% else %}pencil{% endif %} me-2 text-primary"></i>
+    {{ action }} Product
+  </h2>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="form-card">
+      <form method="POST" enctype="multipart/form-data">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">
+              Product Name <span class="text-danger">*</span>
+            </label>
+            <input type="text" class="form-control" name="name" required
+                   value="{{ product['name'] if product else '' }}"
+                   placeholder="e.g. Wireless Headphones">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" name="description" rows="4"
+                      placeholder="Detailed product description...">{{ product['description'] if product else '' }}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              Price ($) <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="number" class="form-control" name="price"
+                     step="0.01" min="0" required
+                     value="{{ '%.2f'|format(product['price']) if product else '' }}"
+                     placeholder="0.00">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              Stock Quantity <span class="text-danger">*</span>
+            </label>
+            <input type="number" class="form-control" name="stock" min="0" required
+                   value="{{ product['stock'] if product else 0 }}" placeholder="0">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Category</label>
+            <input type="text" class="form-control" name="category"
+                   value="{{ product['category'] if product else '' }}"
+                   placeholder="e.g. Electronics">
+          </div>
+
+          <!-- Image Section -->
+          <div class="col-12">
+            <label class="form-label fw-semibold">Product Image</label>
+
+            <!-- Tab switcher -->
+            <div class="btn-group btn-group-sm mb-3 d-flex" role="group" style="max-width:320px">
+              <input type="radio" class="btn-check" name="img_tab" id="tabUpload" autocomplete="off" checked>
+              <label class="btn btn-outline-primary" for="tabUpload">
+                <i class="bi bi-upload me-1"></i>Upload File
+              </label>
+              <input type="radio" class="btn-check" name="img_tab" id="tabUrl" autocomplete="off"
+                     {% if product and product['image_url'] and not '/static/uploads/' in (product['image_url'] or '') %}checked{% endif %}>
+              <label class="btn btn-outline-primary" for="tabUrl">
+                <i class="bi bi-link-45deg me-1"></i>Image URL
+              </label>
+            </div>
+
+            <!-- Upload panel -->
+            <div id="panelUpload">
+              <div id="dropZone" class="border border-2 border-dashed rounded-3 p-4 text-center"
+                   style="cursor:pointer;border-color:#cbd5e1!important;transition:border-color .2s,background .2s">
+                <i class="bi bi-cloud-arrow-up fs-2 text-muted"></i>
+                <p class="mb-1 text-muted">Drag &amp; drop an image here, or</p>
+                <label class="btn btn-outline-primary btn-sm mt-1" for="image_file">
+                  <i class="bi bi-folder2-open me-1"></i>Browse
+                </label>
+                <input type="file" id="image_file" name="image_file"
+                       accept=".png,.jpg,.jpeg,.gif,.webp" class="d-none">
+                <p class="text-muted small mt-2 mb-0">PNG, JPG, GIF, WebP — max 5 MB</p>
+              </div>
+            </div>
+
+            <!-- URL panel -->
+            <div id="panelUrl" style="display:none">
+              <input type="url" class="form-control" name="image_url" id="imageUrlInput"
+                     value="{{ product['image_url'] if product and not '/static/uploads/' in (product['image_url'] or '') else '' }}"
+                     placeholder="https://example.com/image.jpg">
+              <div class="form-text">Paste a direct link to an image file.</div>
+            </div>
+          </div>
+
+          <!-- Image Preview -->
+          <div class="col-12" id="imagePreviewContainer" style="display:none">
+            <label class="form-label fw-semibold">Preview</label>
+            <div class="d-flex align-items-center gap-3">
+              <img id="imagePreview" class="product-img rounded-3"
+                   style="max-height:180px;max-width:240px;object-fit:cover;border:1px solid #e2e8f0" alt="Preview">
+              <button type="button" id="clearImage" class="btn btn-sm btn-outline-danger align-self-start">
+                <i class="bi bi-x-lg me-1"></i>Clear
+              </button>
+            </div>
+          </div>
+
+          <!-- Keep existing uploaded image path on edit (used when no new file/url is provided) -->
+          {% if product and product['image_url'] and '/static/uploads/' in product['image_url'] %}
+          <input type="hidden" id="existingUploadUrl" value="{{ product['image_url'] }}">
+          {% endif %}
+        </div>
+
+        <hr class="my-4">
+        <div class="d-flex gap-2 justify-content-end">
+          <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary px-4">
+            <i class="bi bi-x-lg me-1"></i>Cancel
+          </a>
+          <button type="submit" class="btn btn-primary px-4 fw-semibold">
+            <i class="bi bi-check-lg me-1"></i>{{ action }} Product
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const tabUpload  = document.getElementById('tabUpload');
+  const tabUrl     = document.getElementById('tabUrl');
+  const panelUpload = document.getElementById('panelUpload');
+  const panelUrl   = document.getElementById('panelUrl');
+  const fileInput  = document.getElementById('image_file');
+  const urlInput   = document.getElementById('imageUrlInput');
+  const previewContainer = document.getElementById('imagePreviewContainer');
+  const previewImg = document.getElementById('imagePreview');
+  const clearBtn   = document.getElementById('clearImage');
+  const dropZone   = document.getElementById('dropZone');
+
+  // ── Tab switching ──────────────────────────────
+  function showTab(tab) {
+    if (tab === 'upload') {
+      panelUpload.style.display = '';
+      panelUrl.style.display = 'none';
+    } else {
+      panelUpload.style.display = 'none';
+      panelUrl.style.display = '';
+    }
+    hidePreview();
+  }
+
+  tabUpload.addEventListener('change', () => showTab('upload'));
+  tabUrl.addEventListener('change',    () => showTab('url'));
+
+  // Init tab state on page load
+  if (tabUrl.checked) showTab('url');
+  else showTab('upload');
+
+  // ── Preview helpers ────────────────────────────
+  function showPreview(src) {
+    previewImg.src = src;
+  }
+
+  function hidePreview() {
+    previewContainer.style.display = 'none';
+    previewImg.src = '';
+  }
+
+  previewImg.addEventListener('load', function () {
+    if (this.naturalWidth > 0) {
+      previewContainer.style.display = 'block';
+    }
+  });
+
+  previewImg.addEventListener('error', function () {
+    previewContainer.style.display = 'none';
+  });
+
+  // ── Clear button ───────────────────────────────
+  clearBtn.addEventListener('click', function () {
+    fileInput.value = '';
+    if (urlInput) urlInput.value = '';
+    hidePreview();
+    dropZone.innerHTML = dropZone.innerHTML; // reset label text if any
+  });
+
+  // ── File input change ──────────────────────────
+  fileInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = e => showPreview(e.target.result);
+      reader.readAsDataURL(file);
+      updateDropLabel(file.name);
+    }
+  });
+
+  function updateDropLabel(name) {
+    const p = dropZone.querySelector('p.mb-1');
+    if (p) p.textContent = name;
+  }
+
+  // ── Drag & drop ────────────────────────────────
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.style.borderColor = '#dc2626';
+    dropZone.style.background = 'rgba(220,38,38,.05)';
+  });
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.style.borderColor = '';
+    dropZone.style.background = '';
+  });
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.style.borderColor = '';
+    dropZone.style.background = '';
+    const file = e.dataTransfer.files[0];
+    if (file && /\.(png|jpe?g|gif|webp)$/i.test(file.name)) {
+      // Assign to file input via DataTransfer
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+      const reader = new FileReader();
+      reader.onload = ev => showPreview(ev.target.result);
+      reader.readAsDataURL(file);
+      updateDropLabel(file.name);
+    }
+  });
+
+  // ── URL input with debounce ────────────────────
+  if (urlInput) {
+    let timer;
+    urlInput.addEventListener('input', function () {
+      clearTimeout(timer);
+      const url = this.value.trim();
+      if (!url) { hidePreview(); return; }
+      timer = setTimeout(() => showPreview(url), 500);
+    });
+
+    // Show existing image on edit
+    {% if product and product['image_url'] and not '/static/uploads/' in (product['image_url'] or '') %}
+    showPreview("{{ product['image_url'] | e }}");
+    {% elif product and product['image_url'] and '/static/uploads/' in (product['image_url'] or '') %}
+    showPreview("{{ product['image_url'] | e }}");
+    {% endif %}
+  }
+
+  {% if product and product['image_url'] and '/static/uploads/' in (product['image_url'] or '') %}
+  // Existing product uses an uploaded file — show its preview directly
+  showPreview("{{ product['image_url'] | e }}");
+  // Pre-fill the url input with the existing path so it submits if no new file chosen
+  if (urlInput) urlInput.value = "{{ product['image_url'] | e }}";
+  {% endif %}
+})();
+</script>
+{% endblock %}

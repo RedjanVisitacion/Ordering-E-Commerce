@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Order Confirmed{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-7">
+    <div class="form-card text-center">
+      <div class="success-icon mb-3">
+        <i class="bi bi-check-lg text-success" style="font-size:2.5rem"></i>
+      </div>
+      <h2 class="fw-bold mb-1">Order Confirmed!</h2>
+      <p class="text-muted mb-4">
+        Thank you for your purchase. Your order has been placed successfully.
+      </p>
+
+      <div class="bg-light rounded-3 p-3 mb-4 text-start">
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="text-muted small">Order ID</div>
+            <div class="fw-bold">#{{ order['id'] }}</div>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Status</div>
+            <span class="badge badge-pending rounded-pill px-2">{{ order['status'] }}</span>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Date</div>
+            <div class="fw-semibold">{{ order['created_at'][:10] }}</div>
+          </div>
+          <div class="col-6">
+            <div class="text-muted small">Total Paid</div>
+            <div class="fw-bold" style="color:var(--primary)">
+              ${{ "%.2f"|format(order['total_amount']) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h6 class="fw-bold mb-3 text-start">Items Ordered</h6>
+      {% for item in items %}
+      <div class="d-flex align-items-center gap-3 mb-2 p-2 bg-light rounded-3 text-start">
+        <img src="{{ item['image_url'] or 'https://placehold.co/50x50' }}"
+             class="rounded-2 product-img" style="width:50px;height:50px;object-fit:cover"
+             alt="{{ item['name'] }}">
+        <div class="flex-grow-1">
+          <div class="fw-semibold">{{ item['name'] }}</div>
+          <div class="text-muted small">Qty: {{ item['quantity'] }}</div>
+        </div>
+        <div class="fw-bold" style="color:var(--primary)">
+          ${{ "%.2f"|format(item['price_at_purchase'] * item['quantity']) }}
+        </div>
+      </div>
+      {% endfor %}
+
+      <hr class="mt-4">
+      <div class="d-flex gap-2 justify-content-center flex-wrap">
+        <a href="{{ url_for('my_orders') }}" class="btn btn-primary">
+          <i class="bi bi-clock-history me-1"></i>View My Orders
+        </a>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-shop me-1"></i>Continue Shopping
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

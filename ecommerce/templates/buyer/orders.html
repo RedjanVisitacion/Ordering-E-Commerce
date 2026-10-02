@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}My Orders{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="bi bi-clock-history me-2 text-primary"></i>My Orders</h2>
+  <p class="text-muted mb-0">Track and manage all your past orders</p>
+</div>
+
+{% if orders %}
+  {% for order in orders %}
+  <div class="table-card mb-4">
+    <div class="d-flex align-items-center justify-content-between p-3 border-bottom flex-wrap gap-2">
+      <div class="d-flex gap-4 flex-wrap">
+        <div>
+          <div class="text-muted small">Order ID</div>
+          <div class="fw-bold">#{{ order['id'] }}</div>
+        </div>
+        <div>
+          <div class="text-muted small">Date</div>
+          <div class="fw-semibold">{{ order['created_at'][:10] }}</div>
+        </div>
+        <div>
+          <div class="text-muted small">Total</div>
+          <div class="fw-bold" style="color:var(--primary)">
+            ${{ "%.2f"|format(order['total_amount']) }}
+          </div>
+        </div>
+      </div>
+      <span class="badge rounded-pill badge-{{ order['status']|lower }} px-3 py-2">
+        {% if order['status'] == 'Pending' %}<i class="bi bi-clock me-1"></i>
+        {% elif order['status'] == 'Shipped' %}<i class="bi bi-truck me-1"></i>
+        {% elif order['status'] == 'Delivered' %}<i class="bi bi-check-circle me-1"></i>
+        {% else %}<i class="bi bi-x-circle me-1"></i>{% endif %}
+        {{ order['status'] }}
+      </span>
+    </div>
+    <div class="p-3">
+      {% for item in order_items_map[order['id']] %}
+      <div class="d-flex align-items-center gap-3 mb-2
+                  {% if not loop.last %}pb-2 border-bottom{% endif %}">
+        <img src="{{ item['image_url'] or 'https://placehold.co/50x50' }}"
+             class="rounded-2 product-img" style="width:48px;height:48px;object-fit:cover"
+             alt="{{ item['name'] }}">
+        <div class="flex-grow-1">
+          <div class="fw-semibold">{{ item['name'] }}</div>
+          <div class="text-muted small">
+            Qty: {{ item['quantity'] }} &times; ${{ "%.2f"|format(item['price_at_purchase']) }}
+          </div>
+        </div>
+        <div class="fw-bold">
+          ${{ "%.2f"|format(item['price_at_purchase'] * item['quantity']) }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+<div class="text-center py-5">
+  <i class="bi bi-bag-x" style="font-size:5rem;color:#cbd5e1"></i>
+  <h4 class="mt-3 text-muted">No orders yet</h4>
+  <p class="text-muted">Looks like you haven't made any purchases yet.</p>
+  <a href="{{ url_for('index') }}" class="btn btn-primary px-4">Start Shopping</a>
+</div>
+{% endif %}
+{% endblock %}
